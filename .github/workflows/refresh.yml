@@ -1,0 +1,24 @@
+# Save as .github/workflows/refresh.yml in your repository.
+name: Refresh feeds
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download feeds
+        run: |
+          mkdir -p data
+          curl -fsSL https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json -o data/kev.json
+          curl -fsSL -H "user-agent: sentinel-feeds" https://haveibeenpwned.com/api/v3/breaches -o data/breaches.json
+      - name: Commit changes
+        run: |
+          git config user.name feed-bot
+          git config user.email bot@users.noreply.github.com
+          git add data
+          git diff --cached --quiet || (git commit -m "Update feeds" && git push)
